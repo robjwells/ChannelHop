@@ -255,12 +255,12 @@ end regionalClean
 
 -- Main processing function. Takes a set of files, weekday, boolean Sunday flag
 on processListings(digitalFile, radioFile, regionalFile, terrestrialFile, _day, sun)
+	set lastChannels to {"Film4", "Channel Five"}
+	set shortChannels to {"BBC Three", "BBC Four"}
+	
 	script workhorse -- Closure
 		-- Place digital and terrestrial listings
 		on grepChannel(channelName, indesignLabel)
-			set lastChannels to {"Film4", "Channel Five"}
-			set shortChannels to {"BBC Three", "BBC Four"}
-			
 			-- Catch unset channel names (avoids repetition in call)
 			if indesignLabel is "" then set indesignLabel to channelName
 			
