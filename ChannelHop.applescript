@@ -183,7 +183,7 @@ end getFiles
 -- Clean-up handlers
 on basicClean()
 	tell application "TextWrangler"
-		my _lit("É", "É")
+		my _lit("...", "É")
 		my _lit(" - ", " Ñ ")
 		educate quotes text 1 of text document 1 with replacing target
 	end tell
