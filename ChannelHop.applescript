@@ -2,7 +2,7 @@
 
 --	First created:	08/09/2012
 --	Last updated:	24/01/2013
---	Version:		1.1
+--	Version:		1.11
 
 --	Icon originally by Travis Yunis, available from thenounproject.com
 
@@ -223,7 +223,7 @@ on digital_terrestrialShared()
 		my _grep("$\\r^\\d+\\.\\d+\\ Close\\.$", "")
 		
 		-- Put full stop after film name
-		my _grep("([a-z0-9])(\\ \\d{4}\\ Film\\.)", "\\1\\.\\2")
+		my _grep("([[:alnum:]])(\\ \\d{4}\\ Film\\.)", "\\1\\.\\2")
 	end tell
 end digital_terrestrialShared
 
@@ -240,8 +240,8 @@ on regionalClean()
 		my _grep("(^\\ S4C\\:[\\s\\S]+This channel has ceased broadcasting[\\s\\S]+)(^\\ STV\\ )", "\\2")
 		my _grep("^ (.+:)\\r", "\\1\\ ") -- Put channel names inline with listings
 		my _grep("(\\d+\\.\\d+\\ As BBC1\\.\\ |\\ \\d+\\.\\d+\\ As BBC1\\.$)", "") -- Remove useless "As BBC1" listings
-		my _grep("^ITV1\\ .+:\\ (\\d+\\.\\d+)[a-z&\\ ]+\\.$", "ITV1: \\1 Regional News and Weather\\.") -- Format identical ITV regions
-		my _grep("([a-z0-9])(\\ \\d{4}\\ Film\\.)", "\\1\\.\\2")
+		my _grep("^ITV1\\ .+:\\ (\\d+\\.\\d+)[[:alpha:]&\\ ]+\\.$", "ITV1: \\1 Regional News and Weather\\.") -- Format identical ITV regions
+		my _grep("([[:alnum:]])(\\ \\d{4}\\ Film\\.)", "\\1\\.\\2")
 		my _lit(" \\a9 f190 B18jc\\SIANEL 4 CYMRU\\r", "S4C: ")
 		my _grep("$\\r^\\d+\\.\\d+\\ Close\\.$", "")
 		my _lit("  ", " ")
@@ -266,7 +266,7 @@ on processListings(digitalFile, radioFile, regionalFile, terrestrialFile, _day, 
 			
 			if channelName is in shortChannels then
 				-- Find a single block (i.e. for evening-only channels)
-				set grepPattern to "^" & channelName & "\\r{2}((?:(?:[ 0-9A-Za-z[:punct:]]+)\\r)+)"
+				set grepPattern to "^" & channelName & "\\r{2}((?:(?:[ [:alnum:][:punct:]]+)\\r)+)"
 			else if channelName is in lastChannels then
 				-- Find two blocks and doesn't expect a return at the end of the second block (i.e. at the end of the file)
 				set grepPattern to "^" & channelName & "\\r{2}((?:(?:[ \\d\\w[:punct:]]+)\\r)+)\\r((?:(?:[ \\d\\w[:punct:]]+)\\r)+[ \\d\\w[:punct:]]+)"
