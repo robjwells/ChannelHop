@@ -1,8 +1,8 @@
 --	ChannelHop, automatic TV listings layout for the Morning Star
 
 --	First created:	08/09/2012
---	Last updated:	24/01/2013
---	Version:		1.11
+--	Last updated:	09/02/2013
+--	Version:	1.2
 
 --	Icon originally by Travis Yunis, available from thenounproject.com
 
@@ -37,36 +37,66 @@ on _lit(searchString, replaceString)
 end _lit
 
 
+-- Returns theItem's position in theList as an integer
+on list_position(this_item, this_list)
+	repeat with i from 1 to count of this_list
+		if item i of this_list is this_item then return i
+	end repeat
+end list_position
+
+
 -- Create and return an object containing the weekday, MMDD edition date and MMDD date for Sunday (if necessary)
 on getDate()
+	set theTitle to "Automatic TV listings"
 	set days_list to {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
 	set months_list to {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}
-	set ThirtyDayMonths to {"April", "June", "September", "November"}
-	set ThirtyOneDayMonths to {"January", "March", "May", "July", "August", "October"}
 	set dateObject to {_day:"", _revDate:"", s_revDate:""}
 	
-	-- Get 'tomorrow' values to use as default answers in date prompts
-	set tomorrow to (the (current date) + 86400) -- 60s * 60m * 24h
+	-- Get tomorrow's weekday as a seed default for the prompt
+	if (the weekday of the (current date)) as string is not "Saturday" then
+		set tomorrow to (the (current date) + (1 * days))
+	else -- Jump ahead a day if Saturday (mostly for dev)
+		set tomorrow to (the (current date) + (2 * days))
+	end if
 	set tmDay to {(tomorrow's weekday as string)} -- "Choose from list" requires a list for its default selection
-	set tmDate to tomorrow's day
-	set tmMonth to {(tomorrow's month as string)}
+	
+	set theDay to (choose from list days_list with prompt "Please pick the edition day:" default items tmDay with title theTitle) as string
+	if result is "false" then error number -128 -- Choosing "Cancel" in the dialog ends the script
+	
+	-- Predicted date crunching
+	if theDay is (tmDay as string) then -- Chosen day is tomorrow
+		-- Set defaults to tomorrow's details
+		set prDate to tomorrow's day
+		set prMonth to {(tomorrow's month as string)}
+		set prYear to tomorrow's year -- Needed for creating a Sunday AS date object
+	else if theDay is not (tmDay as string) then -- Chosen day is not tomorrow
+		-- Determine offset from tomorrow and create a date object for it
+		set predictPos to my list_position((tmDay as string), days_list)
+		set actualPos to my list_position(theDay, days_list)
+		set shiftPos to actualPos - predictPos
+		if shiftPos is greater than 0 then -- Another day in current week
+			set predictedDay to tomorrow + (shiftPos * days)
+		else if shiftPos is less than 0 then -- Implies next week
+			set predictedDay to tomorrow + ((7 + shiftPos) * days)
+		end if
+		
+		-- Set defaults with chosen day's details
+		set prDate to predictedDay's day
+		set prMonth to {(predictedDay's month as string)}
+		set prYear to predictedDay's year -- Needed for creating a Sunday AS date object
+	end if
 	
 	-- Prompt for the date
-	set theTitle to "Automatic TV listings"
-	set theDay to (choose from list days_list default items tmDay with prompt "Please pick the edition day:" with title theTitle) as text
+	set theMonth to (choose from list months_list default items prMonth with prompt "Please pick the month:" with title theTitle) as text
 	if result is "false" then error number -128
-	set theMonth to (choose from list months_list default items tmMonth with prompt "Please pick the month:" with title theTitle) as text
-	if result is "false" then error number -128
-	set theDate to the text returned of (display dialog "Please type the date:" default answer tmDate with title theTitle) as text
+	set theDate to the text returned of (display dialog "Please type the date:" default answer prDate with title theTitle) as text
 	if result is "false" then error number -128
 	
 	set dateObject's _day to theDay
 	set shortDay to (characters 1 through 3 of theDay) as text
 	
 	-- Get the month number and add a leading zero if necessary
-	repeat with i from 1 to count of months_list -- Gets the month number by getting its position in a list of months.
-		if item i of months_list is theMonth then set numMonth to i
-	end repeat
+	set numMonth to my list_position(theMonth, months_list)
 	if numMonth is less than 10 then set numMonth to ("0" & numMonth)
 	
 	-- Add an initial zero to the date if necessary
@@ -76,26 +106,14 @@ on getDate()
 	
 	-- Create a Sunday date
 	if theDay is "Saturday" then
-		-- Special cases
-		if (theDate is "30" and theMonth is in ThirtyDayMonths) or (theDate is "31" and theMonth is in ThirtyOneDayMonths) then
-			set Sun_date to "01"
-			set Sun_numMonth to (numMonth + 1)
-			if Sun_numMonth is less than 10 then set Sun_numMonth to ("0" & Sun_numMonth)
-			
-		else if theDate is greater than "27" and theMonth is "February" then
-			set Sun_numMonth to "03"
-			set Sun_date to "01"
-			
-		else if theDate is "31" and theMonth is "December" then
-			set Sun_numMonth to "01"
-			set Sun_date to "01"
-			
-		else -- Create ordinary Sunday date
-			set Sun_numMonth to numMonth
-			set Sun_date to (theDate + 1)
-			if Sun_date is less than 10 then set Sun_date to ("0" & Sun_date)
-			
-		end if
+		-- Create an AppleScript date object for Sunday. Using predicted year could cause problems in theory, but unlikely
+		set sun to ((date (theDay & ", " & theDate & " " & theMonth & " " & prYear)) + 1 * days)
+		
+		set Sun_date to sun's day
+		if Sun_date is less than 10 then set Sun_date to ("0" & Sun_date)
+		
+		set Sun_numMonth to sun's month as number
+		if Sun_numMonth is less than 10 then set Sun_numMonth to ("0" & Sun_numMonth)
 		
 		set dateObject's s_revDate to ("Sun_" & Sun_numMonth & Sun_date)
 	end if
@@ -183,8 +201,8 @@ end getFiles
 -- Clean-up handlers
 on basicClean()
 	tell application "TextWrangler"
-		my _lit("...", "É")
-		my _lit(" - ", " Ñ ")
+		my _lit("...", "â€¦")
+		my _lit(" - ", " â€” ")
 		educate quotes text 1 of text document 1 with replacing target
 	end tell
 end basicClean
