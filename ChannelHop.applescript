@@ -272,6 +272,10 @@ end regionalClean
 
 
 -- Main processing function. Takes a set of files, weekday, boolean Sunday flag
+--
+-- processListings is effectively a wrapper to make it easy to handle the weekend
+-- listings without massive duplication. Otherwise, for Monday-Friday listings,
+-- this stuff would be in the main body of the script.
 on processListings(digitalFile, radioFile, regionalFile, terrestrialFile, _day, sun)
 	set lastChannels to {"Film4", "Channel Five"}
 	set shortChannels to {"BBC Three", "BBC Four"}
